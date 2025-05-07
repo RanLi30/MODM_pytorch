@@ -1,0 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Feb 12 15:26:47 2019
+
+@author: ran
+"""
+
+def jumping(bbox0,bbox1,weight):
+
+    if abs(bbox1[0]-bbox0[0])>weight*bbox0[2] or abs(bbox1[1]-bbox0[1])>weight*bbox0[3]:
+        return "JUMP OCCORED"
