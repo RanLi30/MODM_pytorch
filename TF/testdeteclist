@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Feb 27 17:03:18 2020
+
+@author: ran
+"""
+import time
+import sys
+sys.path.append('../')
+import cv2
+import numpy as np
+from centroid import centerpoint
+from bboxdetct import bboxdetc
+from combinedbbox import compare2bbox
+
+
+image_path_head   = "/home/ran/Trails/BF-C2DL-MuSC/02/GT/"
+#image_path_head   = "/home/ran/Trails/PhC-C2DH-U373/02T/img/"
+#image_path_head   = "/home/ran/Data/exp_F0001 1-113/data/data/"
+image_path_tail   = ".jpg"
+image_path_extra  = "'"
+
+
+for idc in range(1,10):
+    idc2 = idc+1
+    idcname = "%04d" % idc
+    image_seq     = idcname
+    image_path    = "%s%s%s"%(image_path_head,image_seq,image_path_tail)
+    idc1 = idc
+    
+   
+        
+    '''
+    pred_boxes1=linenp1[idx1]                         #bounding box coordinates based on txt file            
+    ...   
+    
+    points1=np.array(cp1[1:idx1])                     #center points array
+    ...
+        
+    pred_boxes1 = pred_boxes1.astype(int)             #coordinates flo change to int
+    ...
+    '''    
+ 
+ #   colo1=colo1.astype(np.int32)
+    #color1=tuple(colo1)
+    # image=cv2.imread(image_path,cv2.IMREAD_COLOR)
+    #r, g, b = cv2.split(image)
+    #image = cv2.merge([b, g, r])
+    image=cv2.imread(image_path)
+    sp=image.shape
+    height=sp[0]
+    width=sp[1]
+    filename=str(idcname)+'.jpg'
+    imageformat="b'jpg'"
+    classtext="b['cell1']"
+    classnum='[1]'
+    
+    '''
+    imageori= cv2.imread(image_path,cv2.IMREAD_COLOR) #original image
+    ro,go,bo= cv2.split(imageori)
+    imageori=cv2.merge([bo,go,ro])
+    '''
+    FFBB=bboxdetc(image)
+    #Bboxdect=compare2bbox(Bboxdect)
+
+    for idx in range(0,len(FFBB)): 
+        #去掉文本行里面的空格、\t、数字（其他有要去除的也可以放到' \t1234567890'里面）
+        a = FFBB[idx]
+        idx1=idx+1
+        '''
+        a=str(a) 
+        #lines = filter(lambda ch: ch not in ' \t\n1234567890,', eachline) 
+        b=a.replace('[','')
+        c=b.replace(']','')
+        d=c.replace('.','')
+        d.lstrip()
+        print (c)
+        '''
+        
+        a=a.astype(np.float)
+        '''
+        xmin=str(a[0])+'/'+str(width)
+        ymin=str(a[1])+'/'+str(height)
+        xmax=str(a[2]+a[0])+'/'+str(width)
+        ymax=str(a[3]+a[1])+'/'+str(height)
+        b='['+xmin+'],['+xmax+'],['+ymin+'],['+ymax+']'
+        ''' 
+        
+        gt_rects = []
+        for gt_rect in a:
+            rect = [str(v) for v in gt_rect[:-1].split(',')]
+            
+            gt_rects.append(rect)          

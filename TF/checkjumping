@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Feb 12 15:30:49 2019
+
+@author: ran
+"""
+import os
+from jumping import jumping
+import numpy as np
+import config
+
+tn=1
+log=open(os.path.join(config.otb_data_dir,'tracking/Jumpinglog.txt'), mode= 'w')
+for idx in range(1,tn+1):
+    ResFile='NEWresult'+str(idx)+'.txt'
+    file_save=os.path.join(config.otb_data_dir,'tracking/',ResFile)
+    #file_save=open('/home/ran/Data/exp_F0001 1-113/result/result8.txt', mode= 'r')
+    
+    #fn15='/home/ran/Trails/MemTrack-master/tracking/02T/result15.txt'
+    #linenp15=np.loadtxt(fn15) 
+    #cp= centerpoint(linenp15)
+    #lines = linenp15.readlines()
+    '''
+    pred_boxes15=linenp1[idx1]                         #bounding box coordinates based on txt file            
+    points1=np.array(cp1[1:idx1])                     #center points array
+    pred_boxes1 = pred_boxes1.astype(int)             #coordinates flo change to int
+    '''
+    
+    #lines = file_save.readlines()
+    #gt_rects = []
+    
+    '''
+    for gt_rect in lines:
+        rect = [int(v) for v in gt_rect[:-1].split(',')]
+        gt_rects.append(rect)
+    '''
+    gt_rects = np.loadtxt(file_save)            
+    horsum=0
+    versum=0
+    log.write('in cell ')
+    log.write(str(idx))
+    log.write('\n')
+    for i in range(0,len(gt_rects)-1):
+        '''
+        horsum=gt_rects[i+1][0]-gt_rects[i][0]+horsum
+        mov_hor=horsum/(i+1)
+        versum=gt_rects[i+1][1]-gt_rects[i][1]+versum
+        mov_ver=versum/(i+1)
+        flag =jumping(log,i,gt_rects[i],gt_rects[i+1],mov_hor,mov_ver,0.5,0.5)
+        '''
+        horsum=gt_rects[i+1][0]-gt_rects[i][0]+horsum
+        mov_hor=horsum/(i+1)
+        versum=gt_rects[i+1][1]-gt_rects[i][1]+versum
+        mov_ver=versum/(i+1)
+        flag =jumping(log,i,gt_rects[i],gt_rects[i+1],mov_hor,mov_ver,0.5,0.5)
+
+        #jumping(gt_rects[i],gt_rects[i+1],1)
+        '''
+        if flag ==1:
+            print(str(i))
+            print(str(gt_rects[i]))
+            log.write(str(i))
+            log.write('\n')
+            log_rects=",".join(str(i) for i in gt_rects[i])
+            log.write(log_rects)
+            log.write('\n')
+        '''
+log.close

@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Mar 28 05:22:18 2020
+
+@author: ran
+"""
+import numpy as np
+import os
+from math import sqrt
+import math
+
+import matplotlib.pyplot as plt
+vdif=np.empty([500,1],float)
+vdif01=np.empty([500,1],float)
+vec01=np.empty([2,1],float)
+vec12=np.empty([2,1],float)
+angdif=np.empty([500,1],float)
+
+
+centers = np.load('/home/ran/Trails/PYTrails/centers.npy')
+
+for j in range (0,498):
+    dis01=(centers[j+1][0]-centers[j][0])^2+(centers[j+1][1]-centers[j][1])^2
+    if dis01 <= 0.001:
+        dis01 = 0
+    dis01s=sqrt(dis01)
+    dis12=(centers[j+1][0]-centers[j+2][0])^2+(centers[j+1][1]-centers[j+2][1])^2
+    if dis12 <= 0.001:
+        dis12 = 0
+    dis12s=sqrt(dis12)
+    disdf=dis12s-dis01s
+    vdif[j]=disdf
+    vdif01[j]=dis01
+
+def dotproduct(v1, v2):
+  return sum((a*b) for a, b in zip(v1, v2))
+
+def length(v):
+  return math.sqrt(dotproduct(v, v))
+
+def angle(v1, v2):
+  return math.acos(dotproduct(v1, v2) / (length(v1) * length(v2)))
+def isNaN(num):
+    if num != num:
+        return 
+    return num != num
+
+for i in range(0,498):
+    vec01[0]=centers[i+1][0]-centers[i][0]
+    vec01[1]=centers[i+1][1]-centers[i][1]
+
+    vec12[0]=centers[i+2][0]-centers[i+1][0]
+    vec12[1]=centers[i+2][1]-centers[i+1][1]
+
+    
+    ang = angle(vec01, vec12)
+
+    angdif[i]=ang
+        
+           
+           
+plt.hist(vdif, bins = 20)
+plt.show()
+plt.hist(angdif, bins = 20)
+plt.show()

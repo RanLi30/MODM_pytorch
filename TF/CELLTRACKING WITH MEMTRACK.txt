@@ -1,0 +1,28 @@
+Procedure
+
+1-Image Filename/format Rename:
+	0000-0xxx.jpg
+2-FirstFrameBoundingBox:
+    change filepath in line 25,55,96
+	run FirstFrameBoundingBox
+	change path of input output.txt and testimage
+	get firstframe.txt in each line like  618, 402,  46,  46
+
+3-tracking
+	tracking_demo2.py:
+		line 32,82 (maybe) image file path
+		line 23 number of each firstframe
+		change resultX.txt savepath in line 65-67(create txt in corresponding path first, totally 6 places for index change)
+		run
+
+4-checking junmping
+    line 16,30 path change
+    
+	
+5-drawframe
+	drawframe:
+		change target number in line 30
+		change path in line 31
+		change path in line 41
+		change path in line 127
+		run
