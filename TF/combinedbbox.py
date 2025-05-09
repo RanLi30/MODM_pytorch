@@ -42,8 +42,8 @@ def compare2bbox (bboxlist):
 
     
 def detectoverlap(bbox1,bbox2):
-    A=[bbox1[0]-5,bbox1[1]-5,bbox1[0]+bbox1[2]+5,bbox1[1]+bbox1[3]+5]
-    B=[bbox2[0]-5,bbox2[1]-5,bbox2[0]+bbox2[2]+5,bbox2[1]+bbox2[3]+5]
+    A=[bbox1[0]-10,bbox1[1]-10,bbox1[0]+bbox1[2]+10,bbox1[1]+bbox1[3]+10]
+    B=[bbox2[0]-10,bbox2[1]-10,bbox2[0]+bbox2[2]+10,bbox2[1]+bbox2[3]+10]
     iou=0
     iw = min(A[2], B[2]) - max(A[0], B[0])
     if iw > 0:
