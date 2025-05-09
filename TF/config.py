@@ -11,14 +11,14 @@ import socket
 #================= data preprocessing ==========================
 
 home_path = '/home/ran'
-root_path = home_path+'/HDD/Data/ILSVRC/ILSVRC'
-tfrecords_path = home_path+'/HDD/Data/ILSVRC/ILSVRC-TF'
-otb_data_dir= home_path+'/Trails/A-10-run05'
-seq='03'#
-ver='1'#
+root_path = home_path+'/Data/Benchmark/OTB'
+tfrecords_path = home_path+'/Data/ILSVRC-TF'
+otb_data_dir= home_path+'/Trails/PhC-C2DH-U373'
+seq='03'
+ver='2'
 code_seq = '/CODE/'+seq+'/'
 image_seq='/CODE/'+seq+'/'+seq+'jpg'+'/'
-res_seq='/RESULTS/TR_'+seq+'_RES/V'+ver+'/'#
+res_seq='/RESULTS/TR_'+seq+'_RES/V'+ver+'/'
 
 
 #otb_data_dir = home_path+'/Data/Benchmark/OTB'
