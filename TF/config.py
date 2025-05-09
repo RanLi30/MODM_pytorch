@@ -10,7 +10,7 @@ import socket
 
 #================= data preprocessing ==========================
 
-home_path = '/home/ran'
+home_path = '/home/ran' #修改地址
 root_path = home_path+'/HDD/Data/Data/ILSVRC/ILSVRC'
 tfrecords_path = home_path+'/HDD/Data/ILSVRC/ILSVRC/ILSVRC-TF'
 otb_data_dir= home_path+'/Trails/PhC-C2DH-U373'
