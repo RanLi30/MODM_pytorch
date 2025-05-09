@@ -157,9 +157,7 @@ def run_tracker(lower,upper):
                 bbox,targetpos, cur_frame,response,instance,memory,templatenew= tracker.track(s_frames[idx],redius,center,idx)
                 # #bboxw=np.array(bbox[0],bbox[1],bbox[2],bbox[3])
                 #print(bbox)
-                writer = tf.summary.FileWriter("log1/", tf.get_default_graph())
-                # 保存图，这个图在此时工作目录的/log1文件夹里
-                writer.close()
+                
                 ############
                 
                 #if cn==5:####02seq
