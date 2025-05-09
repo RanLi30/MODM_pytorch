@@ -23,6 +23,8 @@ from gauss_mask import gauss_mask
 class Model():
     def __init__(self, sess, checkpoint_dir=None):
 
+        self._sess = sess
+
         self.z_file_init = tf.placeholder(tf.string, [], name='z_filename_init')
         self.z_roi_init = tf.placeholder(tf.float32, [1, 4], name='z_roi_init')
         self.z_file = tf.placeholder(tf.string, [], name='z_filename')
@@ -209,13 +211,20 @@ class Tracker():
 
             '''
             shape=response.shape
-            
+
+            '''
             roi_center= [0.5*shape[0],0.5*shape[1]]
             PCcenter = [roi_center,prev_center]
 
             mask_center=LSTMmotion(PCcenter)
             
             mask = gen_crater_mask(shape, mask_center,config.radiusscale*radius/8, 2*config.sigma)
+            '''
+            roi_center = [0.5 * shape[0], 0.5 * shape[1]]
+            mask_center = [roi_center[0] + target_pos[0] - center[0], roi_center[1] + target_pos[1] - center[1]]
+
+            mask = gen_crater_mask(shape, mask_center, config.radiusscale * radius / 8, 2 * config.sigma)
+
 
             mask_shr=cv2.resize(mask,(17,17),interpolation=cv2.INTER_AREA) 
             
