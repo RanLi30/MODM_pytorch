@@ -11,14 +11,14 @@ import socket
 #================= data preprocessing ==========================
 
 home_path = '/home/ran'
-root_path = home_path+'/Data/Benchmark/OTB'
-tfrecords_path = home_path+'/Data/ILSVRC-TF'
+root_path = home_path+'/HDD/Data/Data/ILSVRC/ILSVRC'
+tfrecords_path = home_path+'/HDD/Data/ILSVRC/ILSVRC/ILSVRC-TF'
 otb_data_dir= home_path+'/Trails/PhC-C2DH-U373'
-seq='03'
-ver='2'
+seq='01'#
+ver='1'#
 code_seq = '/CODE/'+seq+'/'
 image_seq='/CODE/'+seq+'/'+seq+'jpg'+'/'
-res_seq='/RESULTS/TR_'+seq+'_RES/V'+ver+'/'
+res_seq='/RESULTS/TR_'+seq+'_RES/V'+ver+'/'#
 
 
 #otb_data_dir = home_path+'/Data/Benchmark/OTB'
@@ -97,9 +97,9 @@ summaries_dir = 'output/summary/'
 checkpoint_dir = 'output/newmodels/'
 pretrained_model_checkpoint_path = 'output/pre_models/'
 
-summary_save_step = 20
-model_save_step = 100
-validate_step = 100
+summary_save_step = 500
+model_save_step = 500#5000
+validate_step = 500#5000
 max_iterations = 100000
 summary_display_step = 8
 
@@ -115,17 +115,17 @@ scale_multipler = 1.1
 scale_penalty = 0.97
 scale_damp = 0.6
 
-response_up = 1#16
+response_up = 16#16
 response_size = 17 #17
 window = 'cosine'
 win_weights = 0.15#0.15
 stride = 8
 avg_num = 1
 sigma_ori=30  #s2-35
-sigma_adjustscale=3
+sigma_adjustscale=2
 eps=0.2
 sigma=sigma_ori*sigma_adjustscale
-radiusscale=200
+radiusscale=5
 
 is_save = False
 showimage = 0

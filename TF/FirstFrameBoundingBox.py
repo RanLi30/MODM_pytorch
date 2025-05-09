@@ -69,7 +69,7 @@ def drawfirstbbox(FFBB):
     #fop=open('/home/ran/Data/exp_F0001 1-113/firstframe1.txt',mode='w')     
     #FFBB=np.array(FFBB)
     zer0=str('0,0,0,0')
-    print('First Frame Bounding Box is: [x,y,shiftx,shifty]')
+    #print('First Frame Bounding Box is: [x,y,shiftx,shifty]')
     
     
     #for eachline in FFBB:

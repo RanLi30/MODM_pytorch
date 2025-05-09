@@ -9,11 +9,12 @@ import config
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+from PIL import Image
 
-def gen_crater_mask(shape, cpos, radius, sigma):
+def gen_crater_mask(image, cpos, radius, sigma):
     #y,x = np.ogrid[1:shape[0]+1,1:shape[1]+1]
     #image=cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    #shape=image.shape
+    shape=image.shape
     y,x = np.ogrid[1:shape[0]+1,1:shape[1]+1]
     x = x-cpos[0]
     y = y-cpos[1]
@@ -27,15 +28,12 @@ def gen_crater_mask(shape, cpos, radius, sigma):
     eps = config.eps
     h[h<eps] = eps
     
-    return h   
-    
-
     #h = h.resize((17,17),Image.ANTIALIAS)
     h2 =cv2.resize(h,(17,17),interpolation=cv2.INTER_AREA) 
     i2= cv2.resize(image,(17, 17),interpolation=cv2.INTER_AREA) 
 
     r = (i2 * h2).clip(0, 255).astype(np.uint8)
-    r3 = (image * h).clip(0, 255).astype(np.uint8)
+    #r3 = (image * h).clip(0, 255).astype(np.uint8)
     r2= cv2.resize(r,(shape[0], shape[1]),interpolation=cv2.INTER_CUBIC) 
     '''    
     maxr2 = r2.max()
@@ -55,10 +53,9 @@ def gen_crater_mask(shape, cpos, radius, sigma):
     
     h2=h2*255
 
-    plt.imshow(h)
-    plt.show()
     
-
+    
+    return r2
     
 
 if __name__ == "__main__":

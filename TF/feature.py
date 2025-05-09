@@ -20,6 +20,7 @@ def extract_feature(is_train, img_patch):
 
     return conv5
 
+
 def conv2d(input, filters, kernel_size, strides, padding, name, group=1):
 
     if group == 1:
@@ -49,10 +50,8 @@ def get_key_feature(input, is_train, name):
     if len(input_shape) > 4:
         input = tf.reshape(input, [-1] + input_shape[2:])
 
-    if config.use_fc_key:
-        contrloller_input = bn_relu_conv2d(is_train, input, config.key_dim, config.slot_size[0:2], [1, 1], 'valid', name=name)
-    else:
-        contrloller_input = tf.layers.average_pooling2d(input, config.slot_size[0:2], [1, 1], 'valid', name=name)
+
+    contrloller_input = tf.layers.average_pooling2d(input, config.slot_size[0:2], [1, 1], 'valid', name=name)
 
     if len(input_shape) > 4:
         c_shape = contrloller_input.get_shape().as_list()

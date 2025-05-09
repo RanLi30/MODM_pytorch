@@ -33,14 +33,13 @@ def _batch_input(is_train, tfrecords_path, batch_size, time_step):
 
     if is_train:
         tf_files = glob.glob(os.path.join(tfrecords_path, 'train-*.tfrecords'))
-        filename_queue = tf.train.string_input_producer(tf_files, shuffle=False, capacity=16) #shuffle=True as default
+        filename_queue = tf.train.string_input_producer(tf_files, shuffle=True, capacity=16)
+
         min_queue_examples = config.min_queue_examples
-        examples_queue = tf.FIFOQueue(capacity=min_queue_examples + 3 * batch_size,dtypes=[tf.string])
-        print(examples_queue)
-        # examples_queue = tf.RandomShuffleQueue(
-            #capacity=min_queue_examples + 3 * batch_size,
-            #min_after_dequeue=min_queue_examples,
-            #dtypes=[tf.string])
+        examples_queue = tf.RandomShuffleQueue(
+            capacity=min_queue_examples + 3 * batch_size,
+            min_after_dequeue=min_queue_examples,
+            dtypes=[tf.string])
         enqueue_ops = []
         for _ in range(config.num_readers):
             _, value = tf.TFRecordReader().read(filename_queue)
@@ -73,10 +72,7 @@ def _batch_input(is_train, tfrecords_path, batch_size, time_step):
     return batch_z, batch_x, batch_y
 
 def _process_images(image_buffers, bboxes, seq_len, thread_id, time_step, is_train):
-    if config.is_limit_search:
-        search_range = tf.minimum(config.max_search_range, seq_len - 1)
-    else:
-        search_range = seq_len-1
+    search_range = seq_len-1
     rand_start_idx = tf.random_uniform([], 0, seq_len-search_range, dtype=tf.int32)
     selected_len = time_step + 1
     if is_train:
@@ -114,8 +110,7 @@ def _process_images(image_buffers, bboxes, seq_len, thread_id, time_step, is_tra
             z_exemplars.append(exemplar)
         if i > 0:
             bbox = tf.gather(bboxes, idx)
-            if config.is_augment:
-                image, bbox = _translate_and_strech(image, [config.x_instance_size, config.x_instance_size],
+            image, bbox = _translate_and_strech(image, [config.x_instance_size, config.x_instance_size],
                                                         config.max_strech_x, config.max_translate_x, bbox)
             x_crops.append(image)
             y_crops.append(bbox)
@@ -285,7 +280,7 @@ if __name__=='__main__':
     feat_size = np.array([15,15])
     label = np.array([[75,75,149,149]])
     label, weights = _generate_labels_overlap_py(feat_size, label, (feat_size - 1)/2)
-    DEBUG = True
+    DEBUG = False
     if DEBUG:
         from utils.display_utils import display_train_input
 
@@ -316,6 +311,4 @@ if __name__=='__main__':
                     # print(seq_len, search_range, select_idxes)
         coord.request_stop()
         coord.join(enqueue_threads)
-
-
 

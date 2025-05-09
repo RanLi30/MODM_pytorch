@@ -11,27 +11,25 @@ import sys
 import cv2
 import config
 from model import build_initial_state, build_model, ModeKeys
-from memnet.memnet import MemNet, AccessState, MemNetState, LSTMmotion
+from memnet.memnet import MemNet, AccessState, MemNetState
 import math
 import matplotlib.pyplot as plt
 from gen_crater_mask import gen_crater_mask
 sys.path.append('../')
-from tensorflow.keras import layers
-from gauss_mask import gauss_mask
+import tensorflow.keras.layers as KL
+
 
 
 class Model():
+
     def __init__(self, sess, checkpoint_dir=None):
 
-        self._sess = sess
-
-        self.z_file_init = tf.placeholder(tf.string, [], name='z_filename_init')
+        self.z_file_init = tf.placeholder(tf.string, [], name='z_filename_init') #占位符
         self.z_roi_init = tf.placeholder(tf.float32, [1, 4], name='z_roi_init')
         self.z_file = tf.placeholder(tf.string, [], name='z_filename')
         self.z_roi = tf.placeholder(tf.float32, [1, 4], name='z_roi')
         self.x_file = tf.placeholder(tf.string, [], name='x_filename')
         self.x_roi = tf.placeholder(tf.float32, [config.num_scale, 4], name='x_roi')
-
         init_z_exemplar,_ = self._read_and_crop_image(self.z_file_init, self.z_roi_init, [config.z_exemplar_size, config.z_exemplar_size])
         init_z_exemplar = tf.reshape(init_z_exemplar, [1, 1, config.z_exemplar_size, config.z_exemplar_size, 3])
         init_z_exemplar = tf.tile(init_z_exemplar, [config.num_scale, 1, 1, 1, 1])
@@ -40,26 +38,22 @@ class Model():
         z_exemplar = tf.tile(z_exemplar, [config.num_scale, 1, 1, 1, 1])
         self.x_instances, self.image = self._read_and_crop_image(self.x_file, self.x_roi, [config.x_instance_size, config.x_instance_size])
         self.x_instances = tf.reshape(self.x_instances, [config.num_scale, 1, config.x_instance_size, config.x_instance_size, 3])
-        
         self.z_exemplar=z_exemplar
-        
+
+
+
+
         with tf.variable_scope('mann'):
             mem_cell = MemNet(config.hidden_size, config.memory_size, config.slot_size, False)
-
         self.initial_state = build_initial_state(init_z_exemplar, mem_cell, ModeKeys.PREDICT)
         self.response, saver, self.final_state, self.outputs, self.query_feature,self.search_feature= build_model(z_exemplar, self.x_instances, mem_cell, self.initial_state, ModeKeys.PREDICT)
-        
         query_feature=self.query_feature
         self.att_score = mem_cell.att_score
-
-        
-
-
         up_response_size = config.response_size * config.response_up
         self.up_response = tf.squeeze(tf.image.resize_images(tf.expand_dims(self.response, -1),
                                                              [up_response_size, up_response_size],
                                                              method=tf.image.ResizeMethod.AREA,
-                                                             align_corners=True), -1) ####
+                                                             align_corners=True), -1)
         if checkpoint_dir is not None:
             saver.restore(sess, checkpoint_dir)
             self._sess = sess
@@ -111,18 +105,15 @@ class Model():
         xy2 = (npad + c_xy + radius)
         norm_rect = tf.stack([xy1[:,1], xy1[:,0], xy2[:,1], xy2[:,0]], axis=1)/tf.concat([pad_frame_sz, pad_frame_sz],1)
         crops = tf.image.crop_and_resize(tf.expand_dims(im, 0), norm_rect, tf.zeros([tf.shape(rois)[0]],tf.int32), model_sz, method='bilinear')
-
         return crops
 
-
+a=1
 class Tracker():
 
     def __init__(self, model):
-
         self._model = model
         self._sess = model._sess
         self.idx = 1
-
         # prepare constant things for tracking
         ''' bbox的长宽使用不同的scaling
         #x and y axis scaling parameter
@@ -130,155 +121,79 @@ class Tracker():
         scale_y = list(range(math.ceil(config.num_scale / 2) - config.num_scale, math.floor(config.num_scale / 2) + 1))
         scale_steps_x=np.power(config.scale_multipler,scale_x)
         scale_steps_y=np.power(config.scale_multipler,scale_y)
-        
+
         scales= [[x,y] for x in scale_steps_x for y in scale_steps_y]
-        
+
         if config.changeaspect==0:
             for i in range(0,len(scales)):
                 if scales[i][1]!=scales[i][0]:
                     scales[i][1]=0
                     scales[i][0]=0
-        
+
         self.scales=scales
         '''
         scale_steps=list(range(math.ceil(config.num_scale / 2) - config.num_scale, math.floor(config.num_scale / 2) + 1)) #通过scale数来生成一个矩阵储存不同的bbox变化scale
         self.scales = np.power(config.scale_multipler, scale_steps) #生成当前的bbox scale矩阵
-        
         up_response_size = config.response_size * config.response_up #response放大 从17*17
-        if config.window == 'cosine':
-            window = np.matmul(np.expand_dims(np.hanning(up_response_size), 1),
-                               np.expand_dims(np.hanning(up_response_size), 0)).astype(np.float32) #生成一个up_response 大小的mask,中心点是1
-        else:
-            window = np.ones([up_response_size, up_response_size], dtype=np.float32)
+        window = np.matmul(np.expand_dims(np.hanning(up_response_size), 1),np.expand_dims(np.hanning(up_response_size), 0)).astype(np.float32) #生成一个up_response 大小的mask,中心点是1
         self.window = window / np.sum(window) #归一化
 
     def estimate_bbox(self, responses, x_roi_size_origs, target_pos, target_size,radius,center,frame_idx):
-
-        #if frame_idx > 1:
-            #response2 = gen_crater_mask(response2, center,radius, config.sigma)
-        
-        check_responses=responses[0]
         up_response_size = config.response_size * config.response_up
         current_scale_idx = math.floor(config.num_scale / 2) #向下取整
         best_scale_idx = current_scale_idx
         best_peak = -math.inf #负无穷
-
-        scaling_x = list(range(math.ceil(config.num_scale / 2) - config.num_scale, math.floor(config.num_scale / 2) + 1))
-        scaling_y = list(range(math.ceil(config.num_scale / 2) - config.num_scale, math.floor(config.num_scale / 2) + 1))
-        scaling_steps_x=np.power(config.scale_multipler,scaling_x)
-        scaling_steps_y=np.power(config.scale_multipler,scaling_y)
-        scaling= [[x,y] for x in scaling_steps_x for y in scaling_steps_y]
-        
-        if config.changeaspect==0:
-            for i in range(0,len(scaling)):
-                if scaling[i][1]!=scaling[i][0]:
-                    scaling[i][1]=0
-                    scaling[i][0]=0
-                
-        
-        
         for s_idx in range(config.num_scale):
-                    
-                       
-            
             this_response = responses[s_idx].copy()
-
-            # penalize the change of scale
-            #if s_idx != current_scale_idx:
-            #    this_response *= config.scale_penalty
             this_peak = np.max(this_response)
             if this_peak > best_peak:
                 best_peak = this_peak
                 best_scale_idx = s_idx
         response = responses[best_scale_idx]
-        #scalingflat=scaling.flatten()
-        bestscaling=scaling[best_scale_idx]
-        
         if config.showimage==1:
             plt.imshow(response)
             plt.show()
-
         x_roi_size_orig = x_roi_size_origs[best_scale_idx]
-
         response=responses[current_scale_idx]
         #############################
-        
         if frame_idx > 1:
-            '''
-            shape = response.shape
-            predict_pos = layers.LSTM(2)(target_pos)
-            mask = gauss_mask(shape,predict_pos,config.sigma)
-
-            '''
             shape=response.shape
-
-            '''
             roi_center= [0.5*shape[0],0.5*shape[1]]
-            PCcenter = [roi_center,prev_center]
-
-            mask_center=LSTMmotion(PCcenter)
-            
-            mask = gen_crater_mask(shape, mask_center,config.radiusscale*radius/8, 2*config.sigma)
-            '''
-            roi_center = [0.5 * shape[0], 0.5 * shape[1]]
-            mask_center = [roi_center[0] + target_pos[0] - center[0], roi_center[1] + target_pos[1] - center[1]]
-
-            mask = gen_crater_mask(shape, mask_center, config.radiusscale * radius / 8, 2 * config.sigma)
-
-
-            mask_shr=cv2.resize(mask,(17,17),interpolation=cv2.INTER_AREA) 
-            
+            mask_center=[roi_center[0]+target_pos[0]-center[0],roi_center[1]+target_pos[1]-center[1]]
+            mask = gen_crater_mask(response, mask_center,config.radiusscale*radius/8, 2*config.sigma)
+            mask_shr=cv2.resize(mask,(17,17),interpolation=cv2.INTER_AREA)
             if config.showimage==1:
                 plt.imshow(mask_shr)
                 plt.show()
-            #response=response-np.min(response)
-
-            
             response_shr= cv2.resize(response,(17, 17),interpolation=cv2.INTER_AREA)
 
             if config.MC==1:
                 response=(mask_shr*response_shr)
                 #response=(mask*response)
-                
+
                 if config.showimage == 1:
                     plt.imshow(response)
                     plt.show()
-                response = cv2.resize(response,(shape[0], shape[1]),interpolation=cv2.INTER_LINEAR) 
-            
-            
-
-        #############################
+                response = cv2.resize(response,(shape[0], shape[1]),interpolation=cv2.INTER_LINEAR)
+  #############################
         if config.showimage == 1:
             plt.imshow(response)
             plt.show()
-
         # make response sum to 1
         response -= np.min(response)
         response /= np.sum(response)
-        
-
-        
         self.norm_response = response
         # apply window
         response = (1 - config.win_weights) * response + config.win_weights * self.window
-        
-
-        
-        
-        
         max_idx = np.argsort(response.flatten())
         max_idx = max_idx[-config.avg_num:]
-
         x = max_idx % up_response_size
         y = max_idx // up_response_size
         position = np.vstack([x, y]).transpose()
-
         shift_center = position - up_response_size // 2
         shift_center_instance = shift_center * config.stride / config.response_up
-
-        shift_center_orig = shift_center_instance * bestscaling
+        shift_center_orig = shift_center_instance * np.expand_dims(x_roi_size_orig, 0) / config.x_instance_size
         target_pos_new = np.mean(target_pos + shift_center_orig, 0)
-
         target_size_new = target_size * self.scales[best_scale_idx]
         target_size = (1 - config.scale_damp) * target_size + config.scale_damp * target_size_new
 
@@ -286,12 +201,12 @@ class Tracker():
 
     def initialize(self, init_frame_file, init_box):
         bbox = np.array(init_box)
-        self.target_pos = bbox[0:2] + bbox[2:4] / 2
-        self.target_size = bbox[2:4]
+        self.target_pos = bbox[0:2] + bbox[2:4] / 2 #目标点位置
+        self.target_size = bbox[2:4] #目标bbox大小
 
-        self.z_roi_size = calc_z_size(self.target_size)
-        self.x_roi_size = calc_x_size(self.z_roi_size)
-        z_roi = np.concatenate([self.target_pos, self.z_roi_size], 0)
+        self.z_roi_size = calc_z_size(self.target_size) #search region size
+        self.x_roi_size = calc_x_size(self.z_roi_size) #search region size
+        z_roi = np.concatenate([self.target_pos, self.z_roi_size], 0) #（x,y,w,h）
         next_state = self._sess.run(self._model.initial_state,
                                              {self._model.z_file_init: init_frame_file,
                                               self._model.z_roi_init: [z_roi]})
@@ -299,12 +214,7 @@ class Tracker():
         self.pre_frame_file = init_frame_file
 
     def track(self, cur_frame_file, redius, center, cur_frame_idx,display=False ):
-        # build pyramid of search images
-        
         sx_roi_size = np.round(np.expand_dims(self.x_roi_size, 0) * np.expand_dims(self.scales, 1))
-        #sx_roi_size = np.round(np.expand_dims(self.x_roi_size, 0) * self.scales)
-        
-        #Both x axis and y axis scaling changes
         target_poses = np.tile(np.expand_dims(self.target_pos,axis=0), [config.num_scale,1])
         x_rois = np.concatenate([target_poses, sx_roi_size], axis=1)
         z_roi = np.concatenate([self.target_pos, self.z_roi_size], 0)
@@ -321,42 +231,25 @@ class Tracker():
                                                             self._model.z_file: self.pre_frame_file,
                                                             self._model.z_roi: [z_roi],
                                                             self._model.initial_state: self.next_state})
-        #S = self._model.x_instances
-        #query=self._model.z_exemplar
 
         # estimate position and size
         Final_template=Ftemplate[0][0]
         Write_in=WITemplate[0][0]
         Search_feature=Search_region[0][0]
-        
         self.target_pos, self.target_size, best_scale_idx = self.estimate_bbox(responses, sx_roi_size, self.target_pos, self.target_size,redius,center,cur_frame_idx)
         bbox = np.hstack([self.target_pos - self.target_size / 2, self.target_size])
-
         self.next_state,memory = get_new_state(self.next_state, best_scale_idx)
         # calculate new x and z roi size for next frame
         self.z_roi_size = calc_z_size(self.target_size)
         self.x_roi_size = calc_x_size(self.z_roi_size)
         self.pre_frame_file = cur_frame_file
-
-        #templatecompare(Final_template)
-        checker = 1
-        if display:
-            return bbox,self.target_pos, cur_frame, x_instances[best_scale_idx, 0], att_score[best_scale_idx], responses[best_scale_idx], self.next_state.access_state,memory,self.query_feature
-        else:
-            return bbox, self.target_pos,cur_frame,responses[best_scale_idx],x_instances[best_scale_idx, 0],memory,Final_template
-
-
-
+        return bbox, self.target_pos,cur_frame,responses[best_scale_idx],x_instances[best_scale_idx, 0],memory,Final_template
 
 def calc_z_size(target_size):
     # calculate roi region
-    if config.fix_aspect:
-        extend_size = target_size + config.context_amount * (target_size[0] + target_size[1])
-        z_size = np.sqrt(np.prod(extend_size))
-        z_size = np.repeat(z_size, 2, 0)
-    else:
-        z_size = target_size * config.z_scale
-
+    extend_size = target_size + config.context_amount * (target_size[0] + target_size[1])
+    z_size = np.sqrt(np.prod(extend_size)) #extend_size长乘以宽的平方
+    z_size = np.repeat(z_size, 2, 0) #size复制两倍
     return z_size
 
 def calc_x_size(z_roi_size):
@@ -364,42 +257,28 @@ def calc_x_size(z_roi_size):
     z_scale = config.z_exemplar_size / z_roi_size
     delta_size = config.x_instance_size - config.z_exemplar_size
     x_size = delta_size / z_scale + z_roi_size
-
     return x_size
 
 def get_new_state(state, best_scale):
 
     lstm_state = state[0]
     access_state = state[1]
-
     c_best = lstm_state[0][best_scale]
     h_best = lstm_state[1][best_scale]
     c = np.array([c_best]*config.num_scale)
     h = np.array([h_best]*config.num_scale)
-
     lstm_state = tf.nn.rnn_cell.LSTMStateTuple(c, h)
-
     s_list = []
     for s in access_state:
         s_best = s[best_scale]
         s_list.append([s_best]*config.num_scale)
     access_state = AccessState(np.array(s_list[0]), np.array(s_list[1]), np.array(s_list[2]),
                                np.array(s_list[3]), np.array(s_list[4]), np.array(s_list[5]), np.array(s_list[6]))
-    
     memory=access_state[1][0]
-    
-    p=1
     return MemNetState(lstm_state, access_state),memory
 
-
-
-
-
 def memory_check(memoryori,idx,cellnumber):
-    
     memory_number=len(memoryori)
-
-    
     for j in range(0,memory_number):
         mem=memoryori
         #_range=np.max(memoryori[j])-np.min(memoryori[j])
@@ -410,10 +289,8 @@ def memory_check(memoryori,idx,cellnumber):
             temp=mem[:,:,c].flatten(order='F')
             memoryout.append(temp)
         out=np.array(memoryout)
-
-
         exec("cv2.imwrite('/home/ran/Pictures/memory/cell"+str(cellnumber)+"_"+str(idx)+"_"+str(j)+".tiff',out)")
-    
+
 def template_check(template):
     templateout=[]
     for c in range(0,len(template[0][0])):
@@ -421,13 +298,11 @@ def template_check(template):
         templateout.append(temp)
     tempout = np.array(templateout)
     exec("cv2.imwrite('/home/ran/Pictures/inter/cell1.tiff',tempout)")
-    
-    
-    
+
 def templatecompare(Ftemplate,init_t):
     Without = 2 * (Ftemplate - init_t * 0.5)
     Withoutarr = np.array(Without)
     Ftemparr = np.array(Ftemplate)
-    ncc = np.mean(np.multiply((Withoutarr - np.mean(Withoutarr)), (Ftemparr - np.mean(Ftemparr)))) / (
-            np.std(Withoutarr) * np.std(Ftemparr))
+    ncc = np.mean(np.multiply((Withoutarr - np.mean(Withoutarr)), (Ftemparr - np.mean(Ftemparr)))) / (np.std(Withoutarr) * np.std(Ftemparr))
     return ncc
+

@@ -11,7 +11,6 @@ sys.path.append('../')
 import cv2
 import numpy as np
 from centroid import centerpoint
-from tifffile import imsave
 from PIL import Image
 import os
 import config

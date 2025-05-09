@@ -103,7 +103,7 @@ config_proto = tf.ConfigProto()
 config_proto.gpu_options.allow_growth = True
 with tf.Graph().as_default(), tf.Session(config=config_proto) as sess:
 
+    #keras.set_session(sess)
     os.chdir('../')
     model = Modelread(sess)
     a = 1
-    print(sess.run(model.att_score))

@@ -9,7 +9,6 @@ import tensorflow as tf
 from input import generate_input_fn
 from model import model_fn
 from estimator import Estimator
-
 import config
 
 
@@ -17,7 +16,6 @@ def experiment():
 
     train_input_fn = generate_input_fn(
         is_train=True,
-        #is_train_LSTM=False,
         tfrecords_path=config.tfrecords_path,
         batch_size=config.batch_size,
         time_step=config.time_step)

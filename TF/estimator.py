@@ -10,7 +10,6 @@ from model import ModeKeys
 import config
 import time
 import os
-from tensorflow.keras.callbacks import TensorBoard
 
 class Estimator():
 
@@ -62,6 +61,7 @@ class Estimator():
                 if idx % config.model_save_step == 0 or idx == config.max_iterations or idx % config.validate_step == 0:
                     checkpoint_path = os.path.join(config.checkpoint_dir, 'model.ckpt')
                     train_spec.saver.save(sess, checkpoint_path, global_step=idx, write_meta_graph=True)
+
                     print('Save to checkpoint at step %d' % (idx))
 
                 if idx % config.validate_step == 0:
@@ -99,7 +99,6 @@ class Estimator():
             i = 0
             print('Starting validate current network......')
             while i < config.max_iterations_eval:
-                print('current validation step:',i)
                 dist_error, loss = sess.run([self._eval_spec.dist_error, self._eval_spec.loss])
                 totoal_dist_error += dist_error
                 totoal_loss += loss

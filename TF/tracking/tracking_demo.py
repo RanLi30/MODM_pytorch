@@ -12,7 +12,7 @@ import time
 import sys
 sys.path.append('../')
 import config
-from tracking.tracker3 import Tracker, Model, memory_check
+from tracking.tracker import Tracker, Model, memory_check
 import matplotlib.pyplot as plt
 import os
 import cv2
@@ -20,7 +20,8 @@ from centroid import centerpoint
 import numpy as np
 from drawCTCRES import DrawCTCRES
 import math
-from tensorflow.keras import layers
+
+
 
 
 def load_seq_config(seq_name,trackidx,CellNum):
@@ -54,7 +55,7 @@ def display_result(image, pred_boxes, frame_idx, cp,seq_name=None):
 
     cv2.putText(image, 'Frame: %d' % frame_idx, (20, 30), cv2.FONT_HERSHEY_DUPLEX, 0.8, (0, 255, 255))
     #cv2.polylines(image, np.int32([points]), 0, (255,255,255))
-    cv2.imshow('tracker', image)
+    #cv2.imshow('tracker', image)
     #exec("cv2.imwrite(os.path.join(config.otb_data_dir,'tracking/resultinstance"+str(Frame_idx)+".jpg'),image)"
     if cv2.waitKey(1) & 0xFF == ord('q'):
         return True
@@ -81,27 +82,19 @@ def mkdir(path):
 	if not folder:
 		os.makedirs(path)
 
-
-
-
 def run_tracker(lower,upper):
 
     config_proto = tf.ConfigProto()
     config_proto.gpu_options.allow_growth = True
-
-
-#for line in fr.readlines():
-#    lineArr=line.strip().split('\t')
-#    dataMat.append([float(lineArr[0]),float(lineArr[1]),float(lineArr[2])],float(lineArr[3]))
-
-    #linenp=np.loadtxt(fn)
     with tf.Graph().as_default(), tf.Session(config=config_proto) as sess:
+        #keras.set_session(sess)
         os.chdir('../')
         model = Model(sess)
         tracker = Tracker(model)
         SPCHANGE=[]
         timeflag=0
         start_time = time.time()
+        res = []
         for cn in range(lower,upper+1):
             #######################################################
             trackidx=0
@@ -127,7 +120,7 @@ def run_tracker(lower,upper):
             bbox = init_rect
             init_center=[math.floor(bbox[0]+0.5*bbox[2]),math.floor(bbox[1]+0.5*bbox[3])]
 
-            res = []
+
             res.append(bbox)
 
             tracker.initialize(s_frames[0], bbox)
@@ -163,8 +156,10 @@ def run_tracker(lower,upper):
                 #bbox, cur_frame,response,instance= tracker.track(s_frames[idx])
                 bbox,targetpos, cur_frame,response,instance,memory,templatenew= tracker.track(s_frames[idx],redius,center,idx)
                 # #bboxw=np.array(bbox[0],bbox[1],bbox[2],bbox[3])
-                ##print(bbox)
-                
+                #print(bbox)
+                writer = tf.summary.FileWriter("log1/", tf.get_default_graph())
+                # 保存图，这个图在此时工作目录的/log1文件夹里
+                writer.close()
                 ############
                 
                 #if cn==5:####02seq
@@ -219,7 +214,7 @@ def run_tracker(lower,upper):
                 #bbox1=linenp
                 display_result(cur_frame, bbox, idx,cp) ###display results
                 timeflag+=1
-                time.sleep(0.2)
+                time.sleep(0.01)
             
                 if idx >= 1:
                     #plt.imshow(response_map)
@@ -239,7 +234,7 @@ def run_tracker(lower,upper):
             file_save.close()
         end_time = time.time()
         fps = timeflag/(end_time-start_time)
-    return SPCHANGE,res, type, fps,templatenorm
+    return SPCHANGE,res,  fps
 
 
 def speedanalysis(cn,SP):
@@ -286,18 +281,12 @@ def speedanalysis(cn,SP):
     return Speedtotal,Speedchangetotal
 
 
-if __name__ == '__main__':      
-        
-        
-        cell_number=1  #################
+if __name__ == '__main__':
+        cell_number=5   #################
         cn=cell_number
-        res=[]
-        SP,res, type, fps,templatenorm=run_tracker(1,cell_number)
-        print(templatenorm)
 
+        SP,res, fps=run_tracker(1,cell_number)
         print(fps)
-
-        #sp,spc = speedanalysis(cell_number,SP)
 
         #print(SPCHANGE)
         Speedtotal=[]
